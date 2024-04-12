@@ -355,7 +355,9 @@ class NuScenesDataset(DatasetTemplate):
             pickle.dump(all_db_infos, f)
 
 
-def create_nuscenes_info(version, data_path, save_path, max_sweeps=10, with_cam=False):
+def create_nuscenes_info(
+        version, data_path, save_path, max_sweeps=10, with_cam=False,
+        with_panoptic=False):
     from nuscenes.nuscenes import NuScenes
     from nuscenes.utils import splits
     from . import nuscenes_utils
@@ -387,7 +389,8 @@ def create_nuscenes_info(version, data_path, save_path, max_sweeps=10, with_cam=
 
     train_nusc_infos, val_nusc_infos = nuscenes_utils.fill_trainval_infos(
         data_path=data_path, nusc=nusc, train_scenes=train_scenes, val_scenes=val_scenes,
-        test='test' in version, max_sweeps=max_sweeps, with_cam=with_cam
+        test='test' in version, max_sweeps=max_sweeps, 
+        with_cam=with_cam, with_panoptic=with_panoptic
     )
 
     if version == 'v1.0-test':
@@ -412,7 +415,8 @@ if __name__ == '__main__':
     parser.add_argument('--cfg_file', type=str, default=None, help='specify the config of dataset')
     parser.add_argument('--func', type=str, default='create_nuscenes_infos', help='')
     parser.add_argument('--version', type=str, default='v1.0-trainval', help='')
-    parser.add_argument('--with_cam', action='store_true', default=False, help='use camera or not')
+    parser.add_argument('--with_cam', type=bool, default=False, help='use camera or not')
+    parser.add_argument('--with_panoptic', type=bool, default=False)
     parser.add_argument('--max_sweeps', type=int, default=10)
     args = parser.parse_args()
 
@@ -426,7 +430,8 @@ if __name__ == '__main__':
             save_path=ROOT_DIR / 'data' / 'nuscenes',
             #!max_sweeps=dataset_cfg.MAX_SWEEPS,
             max_sweeps=args.max_sweeps,
-            with_cam=args.with_cam
+            with_cam=args.with_cam,
+            with_panoptic=args.with_panoptic
         )
 
         nuscenes_dataset = NuScenesDataset(

@@ -310,7 +310,9 @@ def obtain_sensor2top(
     return sweep
 
 
-def fill_trainval_infos(data_path, nusc, train_scenes, val_scenes, test=False, max_sweeps=10, with_cam=False):
+def fill_trainval_infos(
+        data_path, nusc, train_scenes, val_scenes, test=False, 
+        max_sweeps=10, with_cam=False, with_panoptic=False):
     train_nusc_infos = []
     val_nusc_infos = []
     progress_bar = tqdm.tqdm(total=len(nusc.sample), desc='create_info', dynamic_ncols=True)
@@ -379,6 +381,11 @@ def fill_trainval_infos(data_path, nusc, train_scenes, val_scenes, test=False, m
                 cam_info['data_path'] = Path(cam_info['data_path']).relative_to(data_path).__str__()
                 cam_info.update(camera_intrinsics=camera_intrinsics)
                 info["cams"].update({cam: cam_info})
+            
+        if with_panoptic:
+            lidar_panoptic_rec = nusc.get('panoptic', ref_sd_token)
+            panoptic_path = lidar_panoptic_rec['filename']
+            info['panoptic_path'] = panoptic_path
         
         sample_data_token = sample['data'][chan]
         curr_sd_rec = nusc.get('sample_data', sample_data_token)
