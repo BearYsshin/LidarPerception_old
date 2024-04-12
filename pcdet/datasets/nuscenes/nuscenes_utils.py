@@ -6,6 +6,7 @@ https://github.com/traveller59/second.pytorch and https://github.com/poodarchu/D
 import operator
 from functools import reduce
 from pathlib import Path
+import pdb
 
 import numpy as np
 import tqdm
@@ -379,7 +380,6 @@ def fill_trainval_infos(data_path, nusc, train_scenes, val_scenes, test=False, m
                 cam_info.update(camera_intrinsics=camera_intrinsics)
                 info["cams"].update({cam: cam_info})
         
-
         sample_data_token = sample['data'][chan]
         curr_sd_rec = nusc.get('sample_data', sample_data_token)
         sweeps = []

@@ -413,6 +413,7 @@ if __name__ == '__main__':
     parser.add_argument('--func', type=str, default='create_nuscenes_infos', help='')
     parser.add_argument('--version', type=str, default='v1.0-trainval', help='')
     parser.add_argument('--with_cam', action='store_true', default=False, help='use camera or not')
+    parser.add_argument('--max_sweeps', type=int, default=10)
     args = parser.parse_args()
 
     if args.func == 'create_nuscenes_infos':
@@ -423,7 +424,8 @@ if __name__ == '__main__':
             version=dataset_cfg.VERSION,
             data_path=ROOT_DIR / 'data' / 'nuscenes',
             save_path=ROOT_DIR / 'data' / 'nuscenes',
-            max_sweeps=dataset_cfg.MAX_SWEEPS,
+            #!max_sweeps=dataset_cfg.MAX_SWEEPS,
+            max_sweeps=args.max_sweeps,
             with_cam=args.with_cam
         )
 
