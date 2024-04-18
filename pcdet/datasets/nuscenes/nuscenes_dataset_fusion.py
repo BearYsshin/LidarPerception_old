@@ -163,6 +163,8 @@ class NuScenesDatasetFusion(DatasetTemplate):
         input_dict["camera2ego"] = []
         input_dict["camera_intrinsics"] = []
         input_dict["camera2lidar"] = []
+
+        input_dict['cam_calib_infos'] = []
         
         cam_infos = info['cams']
         if self.camera_config.get('USE_SINGLE_IMAGE', False):
@@ -207,6 +209,9 @@ class NuScenesDatasetFusion(DatasetTemplate):
             camera2lidar[:3, :3] = camera_info["sensor2lidar_rotation"]
             camera2lidar[:3, 3] = camera_info["sensor2lidar_translation"]
             input_dict["camera2lidar"].append(camera2lidar)
+
+            # camera calibration matrix
+            input_dict['cam_calib_infos'].append(camera_info['calib_infos'])
         # read image
         filename = input_dict["image_paths"]
         images = []
@@ -224,29 +229,28 @@ class NuScenesDatasetFusion(DatasetTemplate):
     def point_image_matching(self, input_dict):
         num_cams = len(input_dict['camera_imgs'])
         for idx in range(num_cams):
-            pdb.set_trace()
-            calib_infos = input_dict['cams'][idx]['calib_infos']
+            calib_info = input_dict['cam_calib_infos'][idx]
 
-            points = input_dict['points'].copy()
+            points = input_dict['points'].copy().T[:3, :]
 
-            points = Quaternion(calib_infos['lidar2ego_rotation']).rotation_matrix @ points
-            points = points + np.array(calib_infos['lidar2ego_translation'])[:, np.newaxis]
+            points = Quaternion(calib_info['lidar2ego_rotation']).rotation_matrix @ points
+            points = points + np.array(calib_info['lidar2ego_translation'])[:, np.newaxis]
 
-            points = Quaternion(calib_infos['ego2global_rotation_lidar']).rotation_matrix @ points
-            points = points + np.array(calib_infos['ego2global_translation_lidar'])[:, np.newaxis]
+            points = Quaternion(calib_info['ego2global_rotation_lidar']).rotation_matrix @ points
+            points = points + np.array(calib_info['ego2global_translation_lidar'])[:, np.newaxis]
 
-            points = points - np.array(calib_infos['ego2global_translation_cam'])[:, np.newaxis]
-            points = Quaternion(calib_infos['ego2global_rotation_cam']).rotation_matrix.T @ points
+            points = points - np.array(calib_info['ego2global_translation_cam'])[:, np.newaxis]
+            points = Quaternion(calib_info['ego2global_rotation_cam']).rotation_matrix.T @ points
 
-            points = points - np.array(calib_infos['cam2ego_translation'])[:, np.newaxis]
-            points = Quaternion(calib_infos['cam2ego_rotation']).rotation_matrix.T @ points
+            points = points - np.array(calib_info['cam2ego_translation'])[:, np.newaxis]
+            points = Quaternion(calib_info['cam2ego_rotation']).rotation_matrix.T @ points
 
             depths = points[2, :]
 
-            points_mapped = view_points(points, np.array(calib_infos['cam_intrinsic']), normalize=True)
+            points_mapped = view_points(points, np.array(calib_info['cam_intrinsic']), normalize=True)
             points_mapped = points_mapped.astype(np.float32)
 
-            im_shape = input_dict['cams'][idx].size()
+            im_shape = input_dict['camera_imgs'][idx].size
 
             mask = np.ones(depths.shape[0], dtype=bool)
             mask = np.logical_and(mask, depths > 0)
@@ -254,6 +258,8 @@ class NuScenesDatasetFusion(DatasetTemplate):
             mask = np.logical_and(mask, points[0, :] < im_shape[1])
             mask = np.logical_and(mask, points[1, :] > 0)
             mask = np.logical_and(mask, points[1, :] < im_shape[0])
+
+            pdb.set_trace()
         return input_dict
 
     def __len__(self):

@@ -1,4 +1,4 @@
-DATASET: 'NuScenesDataset'
+DATASET: 'NuScenesDatasetFusion'
 DATA_PATH: '../data/nuscenes'
 
 VERSION: 'v1.0-trainval'
@@ -16,6 +16,16 @@ INFO_PATH: {
     'train': [nuscenes_infos_1sweeps_train.pkl],
     'test': [nuscenes_infos_1sweeps_val.pkl],
 }
+
+CAMERA_CONFIG:
+    USE_CAMERA: True
+    USE_SINGLE_IMAGE: True
+    IMAGE: 
+        FINAL_DIM: [900, 1600]
+        RESIZE_LIM_TRAIN: [0.38, 0.55]
+        RESIZE_LIM_TEST: [0.48, 0.48]
+
+POINT_IMG_MATCHING: True
 
 POINT_CLOUD_RANGE: [-51.2, -51.2, -5.0, 51.2, 51.2, 3.0]
 
@@ -52,6 +62,8 @@ DATA_AUGMENTOR:
 
         - NAME: random_world_scaling
           WORLD_SCALE_RANGE: [0.95, 1.05]
+
+      #! Image augmentation should be implemented
 
 
 POINT_FEATURE_ENCODING: {
