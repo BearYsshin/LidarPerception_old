@@ -380,6 +380,23 @@ def fill_trainval_infos(
                 )
                 cam_info['data_path'] = Path(cam_info['data_path']).relative_to(data_path).__str__()
                 cam_info.update(camera_intrinsics=camera_intrinsics)
+
+                cam_sd_rec = nusc.get('sample_data', cam_token)
+                cam_cs_rec = nusc.get('calibrated_sensor', cam_sd_rec['calibrated_sensor_token'])
+                cam_pose_rec = nusc.get('ego_pose', cam_sd_rec['ego_pose_token'])
+                calib_infos = {
+                    'lidar2ego_translation': ref_cs_rec['translation'],
+                    'lidar2ego_rotation': ref_cs_rec['rotation'],
+                    'ego2global_translation_lidar': ref_pose_rec['translation'],
+                    'ego2global_rotation_lidar': ref_pose_rec['rotation'],
+                    'ego2global_translation_cam': cam_pose_rec['translation'],
+                    'ego2global_rotation_cam': cam_pose_rec['rotation'],
+                    'cam2ego_translation': cam_cs_rec['translation'],
+                    'cam2ego_rotation': cam_cs_rec['rotation'],
+                    'cam_intrinsic': camera_intrinsics
+                }
+                cam_info['calib_infos'] = calib_infos
+                
                 info["cams"].update({cam: cam_info})
             
         if with_panoptic:

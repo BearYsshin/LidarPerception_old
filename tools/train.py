@@ -126,6 +126,10 @@ def main():
         seed=666 if args.fix_random_seed else None
     )
 
+    #! 
+    train_set.__getitem__(0)
+    #!  
+
     model = build_network(model_cfg=cfg.MODEL, num_class=len(cfg.CLASS_NAMES), dataset=train_set)
     if args.sync_bn:
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)

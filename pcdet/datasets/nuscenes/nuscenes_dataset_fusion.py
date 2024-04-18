@@ -13,7 +13,7 @@ from pyquaternion import Quaternion
 from PIL import Image
 
 
-class NuScenesDataset(DatasetTemplate):
+class NuScenesDatasetFusion(DatasetTemplate):
     def __init__(self, dataset_cfg, class_names, training=True, root_path=None, logger=None):
         root_path = (root_path if root_path is not None else Path(dataset_cfg.DATA_PATH)) / dataset_cfg.VERSION
         super().__init__(
@@ -21,11 +21,11 @@ class NuScenesDataset(DatasetTemplate):
         )
         self.infos = []
         self.camera_config = self.dataset_cfg.get('CAMERA_CONFIG', None)
-        if self.camera_config is not None:
-            self.use_camera = self.camera_config.get('USE_CAMERA', True)
-            self.camera_image_config = self.camera_config.IMAGE
-        else:
-            self.use_camera = False
+
+        if self.camera_config is None:
+            raise ValueError('[Error] Camera config is not defined')
+        self.use_camera = self.camera_config.get('USE_CAMERA', True)
+        self.camera_image_config = self.camera_config.IMAGE
 
         self.include_nuscenes_data(self.mode)
         if self.training and self.dataset_cfg.get('BALANCED_RESAMPLING', False):
@@ -160,8 +160,16 @@ class NuScenesDataset(DatasetTemplate):
         input_dict["camera2ego"] = []
         input_dict["camera_intrinsics"] = []
         input_dict["camera2lidar"] = []
+        
+        cam_infos = info['cams']
+        if self.camera_config.get('USE_SINGLE_IMAGE', False):
+            cam_names = ['CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_FRONT_LEFT',
+                         'CAM_BACK', 'CAM_BACK_RIGHT', 'CAM_BACK_LEFT']
+            num_cams = len(cam_names)
+            cam_name = cam_names[np.random.randint(0, num_cams)]
+            cam_infos = {cam_name:info['cams'][cam_name]}
 
-        for _, camera_info in info["cams"].items():
+        for _, camera_info in cam_infos.items():
             input_dict["image_paths"].append(camera_info["data_path"])
 
             # lidar to camera transform
@@ -210,6 +218,17 @@ class NuScenesDataset(DatasetTemplate):
 
         return input_dict
 
+    def point_image_matching(self, input_dict):
+        for idx in range(len(input_dict['camera_imgs'])):
+            points = input_dict['points'].copy()
+
+            points = Quaternion(input_dict[''])
+            
+        points = Quaternion(input_dict[''])
+        pdb.set_trace()
+        
+        return input_dict
+
     def __len__(self):
         if self._merge_all_iters_to_one_epoch:
             return len(self.infos) * self.total_epochs
@@ -239,8 +258,11 @@ class NuScenesDataset(DatasetTemplate):
                 'gt_names': info['gt_names'] if mask is None else info['gt_names'][mask],
                 'gt_boxes': info['gt_boxes'] if mask is None else info['gt_boxes'][mask]
             })
-        if self.use_camera:
-            input_dict = self.load_camera_info(input_dict, info)
+
+        input_dict = self.load_camera_info(input_dict, info)
+
+        if self.dataset_cfg.get('POINT_IMG_MATCHING', False):
+            input_dict = self.point_image_matching(input_dict)
 
         data_dict = self.prepare_data(data_dict=input_dict)
 
@@ -434,7 +456,7 @@ if __name__ == '__main__':
             with_panoptic=args.with_panoptic
         )
 
-        nuscenes_dataset = NuScenesDataset(
+        nuscenes_dataset = NuScenesDatasetFusion(
             dataset_cfg=dataset_cfg, class_names=None,
             root_path=ROOT_DIR / 'data' / 'nuscenes',
             logger=common_utils.create_logger(), training=True
