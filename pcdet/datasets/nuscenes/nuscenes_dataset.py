@@ -424,15 +424,15 @@ if __name__ == '__main__':
         dataset_cfg = EasyDict(yaml.safe_load(open(args.cfg_file)))
         ROOT_DIR = (Path(__file__).resolve().parent / '../../../').resolve()
         dataset_cfg.VERSION = args.version
-        create_nuscenes_info(
-            version=dataset_cfg.VERSION,
-            data_path=ROOT_DIR / 'data' / 'nuscenes',
-            save_path=ROOT_DIR / 'data' / 'nuscenes',
-            #!max_sweeps=dataset_cfg.MAX_SWEEPS,
-            max_sweeps=args.max_sweeps,
-            with_cam=args.with_cam,
-            with_panoptic=args.with_panoptic
-        )
+        #!create_nuscenes_info(
+        #!    version=dataset_cfg.VERSION,
+        #!    data_path=ROOT_DIR / 'data' / 'nuscenes',
+        #!    save_path=ROOT_DIR / 'data' / 'nuscenes',
+        #!    #!max_sweeps=dataset_cfg.MAX_SWEEPS,
+        #!    max_sweeps=args.max_sweeps,
+        #!    with_cam=args.with_cam,
+        #!    with_panoptic=args.with_panoptic
+        #!)
 
         nuscenes_dataset = NuScenesDataset(
             dataset_cfg=dataset_cfg, class_names=None,

@@ -9,8 +9,11 @@ from tqdm import tqdm
 from ...ops.roiaware_pool3d import roiaware_pool3d_utils
 from ...utils import common_utils
 from ..dataset import DatasetTemplate
+
 from pyquaternion import Quaternion
 from PIL import Image
+from nuscenes.utils.geometry_utils import view_points
+
 
 
 class NuScenesDatasetFusion(DatasetTemplate):
@@ -219,14 +222,38 @@ class NuScenesDatasetFusion(DatasetTemplate):
         return input_dict
 
     def point_image_matching(self, input_dict):
-        for idx in range(len(input_dict['camera_imgs'])):
+        num_cams = len(input_dict['camera_imgs'])
+        for idx in range(num_cams):
+            pdb.set_trace()
+            calib_infos = input_dict['cams'][idx]['calib_infos']
+
             points = input_dict['points'].copy()
 
-            points = Quaternion(input_dict[''])
-            
-        points = Quaternion(input_dict[''])
-        pdb.set_trace()
-        
+            points = Quaternion(calib_infos['lidar2ego_rotation']).rotation_matrix @ points
+            points = points + np.array(calib_infos['lidar2ego_translation'])[:, np.newaxis]
+
+            points = Quaternion(calib_infos['ego2global_rotation_lidar']).rotation_matrix @ points
+            points = points + np.array(calib_infos['ego2global_translation_lidar'])[:, np.newaxis]
+
+            points = points - np.array(calib_infos['ego2global_translation_cam'])[:, np.newaxis]
+            points = Quaternion(calib_infos['ego2global_rotation_cam']).rotation_matrix.T @ points
+
+            points = points - np.array(calib_infos['cam2ego_translation'])[:, np.newaxis]
+            points = Quaternion(calib_infos['cam2ego_rotation']).rotation_matrix.T @ points
+
+            depths = points[2, :]
+
+            points_mapped = view_points(points, np.array(calib_infos['cam_intrinsic']), normalize=True)
+            points_mapped = points_mapped.astype(np.float32)
+
+            im_shape = input_dict['cams'][idx].size()
+
+            mask = np.ones(depths.shape[0], dtype=bool)
+            mask = np.logical_and(mask, depths > 0)
+            mask = np.logical_and(mask, points[0, :] > 0)
+            mask = np.logical_and(mask, points[0, :] < im_shape[1])
+            mask = np.logical_and(mask, points[1, :] > 0)
+            mask = np.logical_and(mask, points[1, :] < im_shape[0])
         return input_dict
 
     def __len__(self):
